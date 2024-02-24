@@ -78,6 +78,8 @@ AWS_S3_BUCKET_NAME=      # AWS S3 버킷 이름
 
 `/` 주소로 접속했을 때 static 폴더로, `/api` 주소로 접속했을 때 서버 컨테이너로 프록시를 설정해야 합니다.
 
+`/api`를 통해 접근될 시 백엔드에는 `/`로 접근되도록 해야합니다. 이를 통해 nginx의 rewrite를 사용하셔야 합니다.
+
 Docker의 [Networking](https://docs.docker.com/network/) 기능을 활용하면 서버 컨테이너의 포트를 외부에 노출하지 않고
 프록시를 설정할 수 있습니다.
 
