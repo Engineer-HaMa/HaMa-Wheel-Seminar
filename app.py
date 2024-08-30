@@ -59,7 +59,8 @@ def upload_to_s3(keyword: str, objname: str):
     
     aws.upload_file(uploadFile, AWS_S3_BUCKET_NAME, objname)
 
-    return f"https://{AWS_S3_BUCKET_NAME}.s3.amazonaws.com/{objname}"
+    # return f"https://{AWS_S3_BUCKET_NAME}.s3.amazonaws.com/{objname}"
+    return f"https://{AWS_S3_CLOUDFRONT}.cloudfront.net/{objname}"
 
 def getinfo(sessid, typ = False):
     if typ:
@@ -240,7 +241,8 @@ def s3status():
     if s3chk is None: return dumps({'status': 'error', 'message': 'S3 not checked'}), 400
     if s3chkcache: return dumps({'status': 'success', 'message': 'S3 successfully working.'}), 200
     
-    if requests.get(f"https://{AWS_S3_BUCKET_NAME}.s3.amazonaws.com/wheel-seminar-assignment-test.txt").text != s3chk: return dumps({'status': 'error', 'message': "Unexpected keyword. Check AWS Settings."}), 400
+    # if requests.get(f"https://{AWS_S3_BUCKET_NAME}.s3.amazonaws.com/wheel-seminar-assignment-test.txt").text != s3chk: return dumps({'status': 'error', 'message': "Unexpected keyword. Check AWS Settings."}), 400
+    if requests.get(f"https://{AWS_S3_CLOUDFRONT}.cloudfront.net/wheel-seminar-assignment-test.txt").text != s3chk: return dumps({'status': 'error', 'message': "Unexpected keyword. Check AWS Settings."}), 400
     s3chkcache = True
     return dumps({'status': 'success', 'message': 'S3 successfully working.'}), 200
 
