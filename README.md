@@ -7,25 +7,22 @@
 이 과제에서는 다음과 같은 기능들을 구현하게 됩니다.
 
 - [ ] **[`app.py`](./app.py)를 작동시키는 `Dockerfile`을 작성**
-    - **WHL205** Docker
+    - Docker
 - [ ] **[`app.py`](./app.py)와 mysql 데이터베이스, `nginx` 리버스 프록시로 구성된 
 `docker-compose.yml` 작성**
-    - **WHL205** Docker
-    - **WHL210** Apache & NginX
+    - Docker
+    - NginX
 - [ ] **AWS의 `EC2`와 `S3`을 이용하여 서비스를 배포할 수 있는 환경 구성**
-    - **WHL201** AWS
-    - **WHL202** Linux
-    - **WHL204** File System & Physical Disk
-    - **WHL209** Network & DNS
+    - AWS
+    - Linux
+    - etwork & DNS
 - [ ] **이미지를 빌드하여 이미지 레지스트리에 푸시 / 서버에서 배포하는 CD 파이프라인 구축**
     - **WHL208** Github Actions & Introduction to CI / CD
 - [ ] **`EC2`에 배포된 서비스를 `HTTPS`로 접속할 수 있도록 `ssl` 인증서 발급**
-    - **WHL206** Security & Backup
-    - **WHL209** Network & DNS
-    - **WHL210** Apache & NginX
+    - Network & DNS
+    - Apache & NginX
 - [ ] (optional) **Shell script와 crontab을 이용하여 데이터베이스를 주기적으로 백업**
-    - **WHL203** Shell Script & Cron
-    - **WHL206** Security & Backup
+    - Linux
 
 ![Overview](./overview.png)
 
@@ -58,12 +55,8 @@ DOMAIN=                  # 서비스 도메인
 AWS_ACCESS_KEY_ID=       # AWS Access Key ID
 AWS_SECRET_ACCESS_KEY=   # AWS Secret Access Key
 AWS_S3_BUCKET_NAME=      # AWS S3 버킷 이름
+AWS_S3_CLOUDFRONT=       # AWS S3 Cloudfront ID
 ```
-
-
-> **HINT** 
-> `docker-compose.yml` 파일은 `EC2` 서버에 존재하나, `server`의 빌드는 Github Actions에서 이루어지게 되므로 
-> 사용하는 이미지 레지스트리에서의 이미지 이름과 태그를 사용해야 합니다.
 
 ### 데이터베이스
 
@@ -89,24 +82,6 @@ Docker의 [Networking](https://docs.docker.com/network/) 기능을 활용하면 
 > - 기존 nginx 이미지를 베이스 이미지로 하는 새로운 이미지 빌드
 
 
-## 3. CI/CD 파이프라인 구성
-
-이 가이드에서는 CD 파이프라인을 구성하기 위해 **Github Actions**를 사용합니다. 
-[`./.github/workflows/cd.yml`](./.github/workflows/cd.yml)에 워크플로우를 작성하면 됩니다. 추가 파일을 만드셔도 됩니다. 
-
-### `server` 이미지 빌드 후 이미지 레지스트리에 푸시
-
-이미지 레지스트리로는 [Github Registry](https://ghcr.io)를 사용하면 비교적 간단한 security 설정을 통해 사용할 수 있습니다.
-대신 [Docker hub](https://hub.docker.com/)를 사용해도 무방합니다.
-
-서버와 클라이언트의 이미지를 빌드하고, 이미지 레지스트리에 푸시하는 워크플로우를 구성하면 됩니다. 
-
-
-> **HINT** 
-> [`docker/build-push-action`](https://github.com/marketplace/actions/build-and-push-docker-images)를 사용해서
-> 워크플로우를 구성해 보세요. [Github 공식 docs](https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions)
-> 를 참고하는 것도 도움이 될 수 있습니다. 
-
 ### (optional) 새로 빌드된 이미지 기반으로 EC2의 컨테이너 재시작
 
 이전 세미나에서 `platypus`님의 발표에서 다루었던 'Deploy to EC2' 워크플로우를 참고하면 비교적 쉽게 구성할 수 있습니다.
@@ -118,7 +93,7 @@ Docker의 [Networking](https://docs.docker.com/network/) 기능을 활용하면 
 > `docker-compose up -d`을 다시 실행하는 것만으로 서비스를 재배포할 수 있습니다.
 
 
-## 4. AWS 배포 환경 구성
+## 3. AWS 배포 환경 구성
 
 AWS에 배포하기 위해 `EC2`와 `S3`을 사용해 배포 환경을 구성해 주면 됩니다.
 
@@ -134,66 +109,17 @@ AWS에 배포하기 위해 `EC2`와 `S3`을 사용해 배포 환경을 구성해
 
 S3는 asset을 업로드하기 위해 사용됩니다. 이를 위해서 권한이 **public**으로 설정된 S3 버킷을 생성해 주시면 됩니다.
 
-## 5. SSL 인증서
+## 4. SSL 인증서
 
 `letsencrypt`에서 SSL 인증서를 발급받아 서비스에 https로 접속할 수 있도록 합니다. 
 
 구현 방법은 자유이며, 가능한 구현 방법 예시로는 다음이 있습니다. 
 
-- (권장) pip install을 통해 `certbot` 라이브러리를 설치하고, `certbot`을 이용해 SSL 인증서 발급
-- [`certbot` 이미지](https://hub.docker.com/r/webdevops/certbot) 사용
-- `nginx` 컨테이너 볼륨 매핑 후 로컬 머신에서 `certbot` 사용
-- 기존 `nginx` 이미지 대신 SSL 인증서 발급 및 자동 갱신을 지원하는 다른 이미지 사용
+- `certbot` nginx 플러그인을 사용하여 SSL 인증서 발급
+- `certbot` standalone 모드를 사용하여 SSL 인증서 발급
+- `certbot` dns 모드를 사용하여 SSL 인증서 발급
 
-nginx 설정에 적용하기 위해서는 밑 설정을 http 블록에 추가해주시면 됩니다.
-
-```conf
-ssl_certificate /path/to/ssl/fullchain.pem;
-ssl_certificate_key /path/to/ssl/privkey.pem;
-```
-
-nginx 세미나 도중 certbot의 사용방법에 대해 다뤄지지 않았으므로, 밑에 후술된 방법을 사용하는 것을 추천합니다.
-
-### pip certbot standalone을 통한 인증
-
-`certbot` 이미지를 사용하여 `standalone` 모드로 인증을 받을 수 있습니다.
-
-nginx 컨테이너가 중단 된 상태에서 인증서를 발급받고, 인증서를 받은 후에 다시 nginx 컨테이너를 실행하면 됩니다.
-
-```bash
-certbot certonly --standalone -d {domain}
-```
-
-이후 /etc/letsencrypt/live/{domain} 폴더에 인증서가 저장되며, 이를 nginx 컨테이너에 볼륨 매핑하여 사용하면 됩니다.
-
-### pip certbot .well-known 폴더를 통한 인증
-
-nginx 컨테이너를 설정하실 때 `.well-known` 폴더를 컨테이너 내부에 볼륨 매핑하여 `certbot`이 인증을 받을 수 있도록 해주시면 됩니다.
-
-`docker-compose.yml` 에서 다음 예시와 같이 볼륨 매핑을 먼저 합니다.
-
-```yaml
-volumes:
-  - ./web/.well-known:/var/www/.well-known
-```
-
-그리고 밑 설정을 http 블록에 추가해주시면 됩니다.
-
-```conf
-location /.well-known {
-    alias /var/www/.well-known;
-}
-```
-
-이후 아래 명령어를 통해 SSL 인증서를 발급받을 수 있습니다.
-
-```bash
-certbot certonly --webroot -w ./web/ -d {domain}
-```
-
-
-
-## 6. 데이터베이스 백업 설정
+## 5. 데이터베이스 백업 설정
 > Optional 과제를 수행하는 경우에만 필요한 단계입니다. 
 
 `crontab`을 이용해 주기적으로 Mysql의 덤프 파일을 생성하고 S3에 백업하도록 합니다. 
@@ -213,5 +139,4 @@ certbot certonly --webroot -w ./web/ -d {domain}
 
 휠 세미나를 통과하기 위한 장벽이라기 보다는, 공부한 내용을 실제로 적용해 보고 이를 조합하여 하나의 서비스를 배포하는 데에 중점을 두었으므로 
 과제를 하다 막히거나 궁금한 부분이 있다면 자유롭게 질문해 주세요!
-
 

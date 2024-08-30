@@ -1,4 +1,4 @@
-from flask import Flask, request, send_from_directory
+from flask import Flask, request, send_from_directory, redirect
 from flask_cors import CORS
 from json import loads, dumps
 from pathlib import Path
@@ -21,6 +21,7 @@ DOMAIN = None
 AWS_ACCESS_KEY_ID = None
 AWS_SECRET_ACCESS_KEY = None
 AWS_S3_BUCKET_NAME = None
+AWS_S3_CLOUDFRONT = None
 
 app = Flask(__name__)
 CORS(app)
@@ -44,6 +45,7 @@ def load_env():
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
         "AWS_S3_BUCKET_NAME",
+        "AWS_S3_CLOUDFRONT"
     ]
 
     for key in required:
@@ -81,36 +83,75 @@ def send_logout():
         return lgo.text, lgo.status_code
     return dumps({'status': 'error', 'message': 'Invalid session'}), 400
 
-
-@app.route('/auth', methods=['POST'])
-def auth():
-    if "sessid" in request.headers:
-        _, status = getinfo(request.headers['sessid'])
-        if status == 200: return dumps({'status': 'success', 'sessid': request.headers['sessid']}), 200
-    if "userid" not in request.json or "userpw" not in request.json:
-        return dumps({'status': 'error', 'message': 'Invalid request, cannot find userid, pw'}), 400
-    
-    if "Host" not in request.headers:
-        return dumps({'status': 'error', 'message': 'Invalid request, Wrong Host!'}), 400
-    
+@app.route('/auth/google', methods=['GET'])
+def googleauth():
     if request.headers["Host"] != DOMAIN:
         if "localhost" in request.headers["Host"]:
             return dumps({'status': 'error', 'message': 'Invalid request. Check nginx config.'}), 400
         return dumps({'status': 'error', 'message': 'Invalid request, Wrong Host name!'}), 400
+        
+    senddata = {}
+    senddata["domain"] = DOMAIN
+    senddata["clienthash"] = sha256(Path(__file__).read_bytes()).hexdigest()
     
-    if request.json["userid"] != DOMAIN.split(".")[0]:
-        return dumps({'status': 'error', 'message': 'Invalid request, Wrong userid with domain!'}), 400
+    req = requests.post(f"https://{SUBMIT_SERVER}/auth/request", json=senddata, headers={'Dnt': '1', 'Pragma': 'no-cache', 'Sec-Ch-Ua': 'Not.A/B', 'Sec-Ch-Ua-Mobile': '?0', 'Sec-Fetch-Dest': 'empty', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Site': 'same-site', 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Dest': 'empty', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.1.0 Safari/537.36'})
+    if req.status_code == 200:
+        return redirect(f"https://{SUBMIT_SERVER}/auth/google")
+    return req.text, req.status_code
+
+@app.route('/auth/callback', methods=['GET'])
+def googleauthcallback():
+    if request.headers["Host"] != DOMAIN:
+        if "localhost" in request.headers["Host"]:
+            return dumps({'status': 'error', 'message': 'Invalid request. Check nginx config.'}), 400
+        return dumps({'status': 'error', 'message': 'Invalid request, Wrong Host name!'}), 400
+    if "state" not in request.args: return "Invalid request", 400
     
-    senddata = dict(request.json)
+
+    senddata = {}
+    senddata["domain"] = DOMAIN
+    senddata["state"] = request.args["state"]
     senddata["clienthash"] = sha256(Path(__file__).read_bytes()).hexdigest()
     senddata["bucket_name"] = AWS_S3_BUCKET_NAME
-    
-    req = requests.post(f"https://{SUBMIT_SERVER}/auth", json=senddata, headers={'Dnt': '1', 'Pragma': 'no-cache', 'Sec-Ch-Ua': 'Not.A/B', 'Sec-Ch-Ua-Mobile': '?0', 'Sec-Fetch-Dest': 'empty', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Site': 'same-site', 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Dest': 'empty', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.1.0 Safari/537.36'})
-    if req.status_code == 200:
+    senddata["bucket_cloudfront"] = AWS_S3_CLOUDFRONT
+
+    rtn = requests.post(f"https://{SUBMIT_SERVER}/auth", headers={'Dnt': '1', 'Pragma': 'no-cache', 'Sec-Ch-Ua': 'Not.A/B', 'Sec-Ch-Ua-Mobile': '?0', 'Sec-Fetch-Dest': 'empty', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Site': 'same-site', 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Dest': 'empty', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.1.0 Safari/537.36'})
+    if rtn.status_code == 200:
         global db
         if db is not None and db.open: db.close()
         db = None
-    return req.text, req.status_code
+    
+    return rtn.text, rtn.status_code
+
+# @app.route('/auth', methods=['POST'])
+# def auth():
+#     if "sessid" in request.headers:
+#         _, status = getinfo(request.headers['sessid'])
+#         if status == 200: return dumps({'status': 'success', 'sessid': request.headers['sessid']}), 200
+#     if "userid" not in request.json or "userpw" not in request.json:
+#         return dumps({'status': 'error', 'message': 'Invalid request, cannot find userid, pw'}), 400
+    
+#     if "Host" not in request.headers:
+#         return dumps({'status': 'error', 'message': 'Invalid request, Wrong Host!'}), 400
+    
+#     if request.headers["Host"] != DOMAIN:
+#         if "localhost" in request.headers["Host"]:
+#             return dumps({'status': 'error', 'message': 'Invalid request. Check nginx config.'}), 400
+#         return dumps({'status': 'error', 'message': 'Invalid request, Wrong Host name!'}), 400
+    
+#     if request.json["userid"] != DOMAIN.split(".")[0]:
+#         return dumps({'status': 'error', 'message': 'Invalid request, Wrong userid with domain!'}), 400
+    
+#     senddata = dict(request.json)
+#     senddata["clienthash"] = sha256(Path(__file__).read_bytes()).hexdigest()
+#     senddata["bucket_name"] = AWS_S3_BUCKET_NAME
+    
+#     req = requests.post(f"https://{SUBMIT_SERVER}/auth", json=senddata, headers={'Dnt': '1', 'Pragma': 'no-cache', 'Sec-Ch-Ua': 'Not.A/B', 'Sec-Ch-Ua-Mobile': '?0', 'Sec-Fetch-Dest': 'empty', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Site': 'same-site', 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Dest': 'empty', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.1.0 Safari/537.36'})
+#     if req.status_code == 200:
+#         global db
+#         if db is not None and db.open: db.close()
+#         db = None
+#     return req.text, req.status_code
 
 @app.route('/sessinfo')
 def checkseminar():
