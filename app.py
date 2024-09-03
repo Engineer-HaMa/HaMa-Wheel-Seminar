@@ -112,7 +112,6 @@ def googleauthcallback():
         return dumps({'status': 'error', 'message': 'Invalid request, Wrong Host name!'}), 400
     if "state" not in request.args: return "Invalid request", 400
     
-
     senddata = {}
     senddata["domain"] = DOMAIN
     senddata["state"] = request.args["state"]
@@ -120,13 +119,17 @@ def googleauthcallback():
     senddata["bucket_name"] = AWS_S3_BUCKET_NAME
     senddata["bucket_cloudfront"] = AWS_S3_CLOUDFRONT
 
-    rtn = requests.post(f"https://{SUBMIT_SERVER}/auth", headers={'Dnt': '1', 'Pragma': 'no-cache', 'Sec-Ch-Ua': 'Not.A/B', 'Sec-Ch-Ua-Mobile': '?0', 'Sec-Fetch-Dest': 'empty', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Site': 'same-site', 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Dest': 'empty', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.1.0 Safari/537.36'})
-    if rtn.status_code == 200:
-        global db
-        if db is not None and db.open: db.close()
-        db = None
+    rtn = requests.post(f"https://{SUBMIT_SERVER}/auth/last", json=senddata, headers={'Dnt': '1', 'Pragma': 'no-cache', 'Sec-Ch-Ua': 'Not.A/B', 'Sec-Ch-Ua-Mobile': '?0', 'Sec-Fetch-Dest': 'empty', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Site': 'same-site', 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Dest': 'empty', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.1.0 Safari/537.36'})
+    if rtn.status_code != 200:
+        return rtn.text, rtn.status_code
     
-    return rtn.text, rtn.status_code
+    global db
+    if db is not None and db.open: db.close()
+    db = None
+
+    data = rtn.json()
+    if "sessid" in data:
+        return redirect(f"https://{DOMAIN}/callback.html?sessid={data['sessid']}")
 
 # @app.route('/auth', methods=['POST'])
 # def auth():
