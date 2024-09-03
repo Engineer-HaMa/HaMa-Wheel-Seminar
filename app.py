@@ -73,6 +73,10 @@ def getinfo(sessid, typ = False):
 def send_index():
     return "<h1>IT WORKS! (API) [/ ]</h1>"
 
+@app.route('/check')
+def send_check():
+    return "<h1>IT WORKS! (API) [/check]</h1>"
+
 @app.route('/logout')
 def send_logout(): 
     if "sessid" in request.headers:

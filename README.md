@@ -55,7 +55,7 @@ DOMAIN=                  # 서비스 도메인
 AWS_ACCESS_KEY_ID=       # AWS Access Key ID
 AWS_SECRET_ACCESS_KEY=   # AWS Secret Access Key
 AWS_S3_BUCKET_NAME=      # AWS S3 버킷 이름
-AWS_S3_CLOUDFRONT=       # AWS S3 Cloudfront ID
+AWS_S3_CLOUDFRONT=       # AWS S3 Cloudfront domain name
 ```
 
 ### 데이터베이스
@@ -78,19 +78,15 @@ Docker의 [Networking](https://docs.docker.com/network/) 기능을 활용하면 
 
 > **HINT** 
 > `nginx.conf` 파일을 컨테이너 내부에 적용하기 위해 다음 방법 중 하나를 사용해 볼 수 있습니다. 
-> - Volume mount 이용
+> - Volume mount 이용 (/etc/nginx/conf.d/default.conf)
 > - 기존 nginx 이미지를 베이스 이미지로 하는 새로운 이미지 빌드
 
 
 ### (optional) 새로 빌드된 이미지 기반으로 EC2의 컨테이너 재시작
 
-이전 세미나에서 `platypus`님의 발표에서 다루었던 'Deploy to EC2' 워크플로우를 참고하면 비교적 쉽게 구성할 수 있습니다.
-따로 이 방법을 사용하지 않고, 직접 이미지 레지스트리에서 이미지를 다운로드 받아 EC2에 배포하는 것도 가능합니다.
-
-
 > **HINT** 
 > `docker-compose.yml` 파일이 이미지 레지스트리에 푸쉬된 이미지를 사용하도록 작성되어 있다면
-> `docker-compose up -d`을 다시 실행하는 것만으로 서비스를 재배포할 수 있습니다.
+> `docker-compose up -d --build`을 다시 실행하는 것만으로 서비스를 재배포할 수 있습니다.
 
 
 ## 3. AWS 배포 환경 구성
@@ -107,7 +103,12 @@ AWS에 배포하기 위해 `EC2`와 `S3`을 사용해 배포 환경을 구성해
 
 ### S3
 
-S3는 asset을 업로드하기 위해 사용됩니다. 이를 위해서 권한이 **public**으로 설정된 S3 버킷을 생성해 주시면 됩니다.
+S3는 asset을 업로드하기 위해 사용됩니다. 이를 위해서 권한이 **Restricted**으로 설정된 S3 버킷을 생성해 주시면 됩니다.
+
+### CloudFront
+
+S3와 연결된 CloudFront를 외부 웹 접속에 사용합니다. 이를 위해
+권한설정이 따로 필요합니다.
 
 ## 4. SSL 인증서
 
