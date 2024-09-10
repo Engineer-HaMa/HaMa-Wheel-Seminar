@@ -236,7 +236,8 @@ def s3run():
     global s3chkcache
     s3chk = str(time.time())
     s3chkcache = False
-    url = upload_to_s3(s3chk, "wheel-seminar-assignment-test.txt")
+    upload_to_s3(s3chk, "wheel-seminar-assignment-test.txt")
+    url = f"https://{AWS_S3_CLOUDFRONT}.cloudfront.net/wheel-seminar-assignment-test.txt"
 
     if requests.get(url).text != s3chk: return dumps({'status': 'error', 'message': "Unexpected keyword. Check AWS Settings."}), 400
     return dumps({'status': 'success', 'message': 'S3 successfully working.'}), 200
