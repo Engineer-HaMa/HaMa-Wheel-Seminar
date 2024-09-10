@@ -16,8 +16,6 @@
     - AWS
     - Linux
     - etwork & DNS
-- [ ] **이미지를 빌드하여 이미지 레지스트리에 푸시 / 서버에서 배포하는 CD 파이프라인 구축**
-    - **WHL208** Github Actions & Introduction to CI / CD
 - [ ] **`EC2`에 배포된 서비스를 `HTTPS`로 접속할 수 있도록 `ssl` 인증서 발급**
     - Network & DNS
     - Apache & NginX
