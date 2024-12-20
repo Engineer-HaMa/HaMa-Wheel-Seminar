@@ -1,1 +1,15 @@
-# Start here!
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile
+    ports:
+      - "80:80"
+  server:
+    build: .
+    ports:
+      - "[::1]:8000:5000"
+  db:
+    image: mysql:8.4.3
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
