@@ -5,10 +5,10 @@ services:
       dockerfile: nginx.Dockerfile
     ports:
       - "80:80"
-  server:
+  api:
     build: .
-    ports:
-      - "[::1]:8000:5000"
+    env_file:
+      - .env
   db:
     image: mysql:8.4.3
     environment:
